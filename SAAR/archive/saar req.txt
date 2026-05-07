@@ -1,0 +1,129 @@
+now can u make a avatar for saar like my idea is i am making a personal assistant which can cconntrol my laptop by command write code for me and save it to notepad like proper automation control my email, whatapp, youtube all application on my command and also it can be secure like my pressencce it can autounlockk and in my absence laptop should get lock see currently i have ollam brainn connecct to saar but it onnly understandd english and it give answer buut i want friend not only teacher and currrently i am done feature like ✅ CURRENT FEATURES COMPLETED IN SAAR
+
+🎙️ 1. Voice Pipeline (WORKING)
+
+* Mic input detection ✅
+
+* Wake-word based activation (Hello Sir / similar) ✅
+
+* Separate wake listening and command listening ✅
+
+* Prevents self-listening while speaking ✅
+
+📌 Status: Stable
+
+🧠 2. Brain (Decision System)
+
+* Rule-based command handling before LLM ✅
+
+* LLM used only when logic is not matched ✅
+
+* English-only enforced in chat mode ✅
+
+📌 Status: Working (needs refinement, not broken)
+
+💾 3. Memory System (LOCAL & PERSISTENT)
+
+* Stores your name ✅
+
+“My name is Sagar”
+
+* Recalls your name correctly ✅
+
+“What is my name?”
+
+* Stores sister’s name separately ✅
+
+* Recalls sister’s name correctly (after fix) ✅
+
+* Memory survives during runtime (SQLite / local store) ✅
+
+📌 Status: Functional, but schema is minimal
+
+🖥️ 4. Application Automation (Windows)
+
+You can open & close apps by voice:
+
+AppOpenCloseChrome✅✅Notepad✅✅Calculator✅✅VS Code✅✅
+
+📌 Status: Working reliably
+
+🌐 5. Browser & Web Automation
+
+* Open YouTube directly ✅
+
+* Search inside YouTube (YouTube results page) ✅
+
+* Open Gmail ✅
+
+* Search in Chrome (Google) ✅
+
+📌 Status: Correct after YouTube fix
+
+📝 6. Code Writing in Notepad (BIG FEATURE)
+
+* Voice → Generate code → Write into Notepad ✅
+
+* Supports languages:
+
+   * C
+
+   * Python
+
+   * Java
+
+   * C++
+
+* Auto-correction pass before saving ✅
+
+* Code is saved automatically to a folder ✅
+
+📌 Status: Working, typing speed still being tuned
+
+🔧 7. System Tools
+
+* Get time ✅
+
+* Get date ✅
+
+* Battery status ✅
+
+* OS / system info ✅
+
+* Open Windows Update settings ✅
+
+* Delete files (basic) ✅
+
+📌 Status: Stable
+
+🤖 8. LLM Integration (Ollama)
+
+* Local model (no internet dependency) ✅
+
+* Prompt-controlled generation (strict mode) ✅
+
+* Model switched to higher-quality option (Qwen) ✅
+
+📌 Status: Good foundation
+
+❌ FEATURES NOT DONE YET (Important)
+
+These are NOT implemented yet (no confusion):
+
+* ❌ Permanent long-term memory across days
+
+* ❌ Database schema (user profile, preferences, history)
+
+* ❌ Laptop shutdown / restart / sleep
+
+* ❌ File explorer automation (create, rename, move)
+
+* ❌ YouTube play / pause / fullscreen
+
+* ❌ Hindi understanding
+
+* ❌ Emotion / behavior understanding
+
+* ❌ Wake word “SAAR / SK” engine-level detection
+
+* ❌ Self-learning logic (controlled learning)

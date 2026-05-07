@@ -1,0 +1,35 @@
+# SAAR Neural HUD Git Ignore
+# -------------------------
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+ENV/
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# User Data & Security
+saar.db*
+*.mp3
+*.wav
+error_log.txt
+extracted_text_*.txt
+temp_*.pdf
+Invoice_*.html
+Invoice_*.pdf
+
+# Config & Keys
+email_config.json
+contacts.json
+
+# IDE Settings
+.vscode/
+.idea/

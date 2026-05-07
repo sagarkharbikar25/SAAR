@@ -1,0 +1,12 @@
+{
+    "work mode": [
+        "set volume to 40",
+        "open vscode",
+        "open chrome"
+    ],
+    "relax mode": [
+        "set volume to 80",
+        "open spotify",
+        "play music"
+    ]
+}

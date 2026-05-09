@@ -55,14 +55,17 @@ def run_voice_pipeline(state):
         
     last_state = None
     last_heartbeat = time.time()
+    conversation_active_until = 0
 
     while True:
         # Prevent listening to self
         if is_speaking:
             time.sleep(0.5)
             continue
+            
+        skip_wake_word = state.is_work_mode() or (time.time() < conversation_active_until)
 
-        if last_state != "idle":
+        if not skip_wake_word and last_state != "idle":
             state.set("idle")
             last_state = "idle"
             print("🟡 Adjusting for background noise...")
@@ -80,7 +83,7 @@ def run_voice_pipeline(state):
 
         try:
             with mic as source:
-                if not state.is_work_mode():
+                if not skip_wake_word:
                     # 1. Listen for Wake Word (Added safety timeout)
                     audio = recognizer.listen(source, timeout=5, phrase_time_limit=4)
                     try:
@@ -105,14 +108,17 @@ def run_voice_pipeline(state):
                     speak("Yes Sagar?")
                     is_speaking = False
                 else:
-                    # Work Mode is ON -> skip Wake Word, just show listening state
+                    # Work Mode or Active Conversation is ON
                     if last_state != "listening":
                         state.set("listening")
                         last_state = "listening"
-                        print(f"💼 [Work Mode] Continuous Listening Active...")
+                        if state.is_work_mode():
+                            print(f"💼 [Work Mode] Continuous Listening Active...")
+                        else:
+                            print(f"🔄 [Conversation] Actively listening for follow-up...")
 
                 # 3. Listen for Command
-                audio = recognizer.listen(source, timeout=10 if state.is_work_mode() else 5, phrase_time_limit=15)
+                audio = recognizer.listen(source, timeout=10 if skip_wake_word else 5, phrase_time_limit=15)
                 command_text = recognizer.recognize_google(audio)
         except sr.WaitTimeoutError:
             continue
@@ -141,6 +147,7 @@ def run_voice_pipeline(state):
             speak("Okay Sagar, going idle.")
             is_speaking = False
 
+            conversation_active_until = 0  # End active conversation
             last_state = None  # force idle reset
             print("↩ SAAR returned to idle")
             continue
@@ -177,5 +184,8 @@ def run_voice_pipeline(state):
         time.sleep(0.4)
         is_speaking = False
 
-        # Back to idle
+        # Extend active conversation window by 15 seconds after speaking
+        conversation_active_until = time.time() + 15
+
+        # Soft reset for visual state evaluation next loop
         last_state = None

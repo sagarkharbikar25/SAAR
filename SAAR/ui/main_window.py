@@ -216,7 +216,7 @@ class SAAR_UI(ctk.CTk):
         
         chips = ["Open Chrome", "Check Weather", "Play Music", "Open VS Code"]
         for chip in chips:
-            c_btn = ctk.CTkButton(self.chips_frame, text=f"[{chip}]", width=10, height=24, corner_radius=12, 
+            c_btn = ctk.CTkButton(self.chips_frame, text=f"[{chip}]", width=10, height=24, corner_radius=0, 
                                   fg_color="transparent", text_color=self.colors["primary"], 
                                   border_color=self.colors["border_active"], border_width=1,
                                   hover_color=self.colors["border_normal"], font=("Consolas", 11),
@@ -226,11 +226,11 @@ class SAAR_UI(ctk.CTk):
         self.cmd_bar = ctk.CTkFrame(self.cmd_area, fg_color="transparent")
         self.cmd_bar.pack(fill=ctk.X, pady=(0, 0))
         
-        self.query_entry = ctk.CTkEntry(self.cmd_bar, placeholder_text="Enter command or speak...", height=50, font=("Share Tech Mono", 16), corner_radius=0, border_width=1, fg_color="#000", border_color=self.colors["secondary"])
+        self.query_entry = ctk.CTkEntry(self.cmd_bar, placeholder_text="root@saar:~# [Enter Command...]", height=50, font=("Share Tech Mono", 16), corner_radius=0, border_width=1, fg_color="#000", border_color=self.colors["secondary"])
         self.query_entry.pack(side="left", fill=ctk.X, expand=True, padx=(0, 10))
         self.query_entry.bind("<Return>", lambda e: self.send_text_command())
         
-        self.mic_btn = ctk.CTkButton(self.cmd_bar, text="🎤", width=50, height=50, corner_radius=25, fg_color="#111", text_color=self.colors["secondary"], border_color=self.colors["secondary"], border_width=1, font=("Segoe UI Emoji", 20), command=self.toggle_mic_gui)
+        self.mic_btn = ctk.CTkButton(self.cmd_bar, text="🎤", width=50, height=50, corner_radius=0, fg_color="#111", text_color=self.colors["secondary"], border_color=self.colors["secondary"], border_width=1, font=("Segoe UI Emoji", 20), command=self.toggle_mic_gui)
         self.mic_btn.pack(side="left", padx=(0, 10))
         
         self.send_btn = ctk.CTkButton(self.cmd_bar, text="▶ EXECUTE", width=120, height=50, corner_radius=0, fg_color="transparent", text_color=self.colors["primary"], border_color=self.colors["primary"], border_width=1, hover_color=self.colors["border_normal"], font=("Orbitron", 14, "bold"), command=self.send_text_command)

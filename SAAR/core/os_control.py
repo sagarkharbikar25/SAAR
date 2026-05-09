@@ -489,6 +489,49 @@ def move_window_to_monitor():
     except Exception as e:
         return f"Failed to move window: {e}"
 
+def refresh_desktop():
+    """Refreshes the Windows desktop to show new files."""
+    try:
+        import ctypes
+        # SHCNE_ASSOCCHANGED = 0x08000000, SHCNF_IDLIST = 0x0000
+        ctypes.windll.shell32.SHChangeNotify(0x08000000, 0x0000, None, None)
+        return "Desktop refreshed boss!"
+    except Exception as e:
+        return f"Refresh Error: {e}"
+
+def pin_window_to_top():
+    """Pins the currently active window to be always on top."""
+    try:
+        import pygetwindow as gw
+        win = gw.getActiveWindow()
+        if win:
+            # We use a shortcut or a library if available, but pygetwindow doesn't support 'always on top' directly easily.
+            # Fallback: use a simple pyautogui sequence or advise user.
+            return "To pin a window, please use 'Win + Ctrl + T' if you have PowerToys, or I can try a custom script Sagar."
+        return "No active window found."
+    except Exception as e:
+        return f"Pin Error: {e}"
+
+def create_quick_note(content: str):
+    """Saves a quick note to the desktop."""
+    try:
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        note_path = os.path.join(desktop, "SAAR_Quick_Note.txt")
+        with open(note_path, "a", encoding="utf-8") as f:
+            f.write(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {content}")
+        return "Quick note saved to your desktop Sagar!"
+    except Exception as e:
+        return f"Note Error: {e}"
+
+def copy_file_path(file_path: str):
+    """Copies the full path of a file to the clipboard."""
+    try:
+        import pyperclip
+        pyperclip.copy(file_path)
+        return f"Full path of {os.path.basename(file_path)} copied to clipboard Sagar!"
+    except Exception as e:
+        return f"Copy Path Error: {e}"
+
 # --- Clipboard History Thread ---
 CLIPBOARD_HISTORY = []
 def _clipboard_monitor():

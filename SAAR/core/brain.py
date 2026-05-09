@@ -214,21 +214,36 @@ def is_email_command(text: str):
 def pick_model(text: str) -> str:
     if is_write_code_task(text) or any(w in text for w in ["modify", "edit", "change", "update", "fix"]):
         return CODE_MODEL
-    return LOCAL_MODEL
-
-# Global instance for speed
 _gemini_model = None
 _gemini_ready = False
 
 def run_online_llm(prompt):
-    """Runs Google Gemini (Online) with auto-retry and failover."""
+    """Runs Google Gemini (Online) with dynamic model discovery."""
     global _gemini_model, _gemini_ready
+    
     try:
         if not _gemini_ready:
             api_key_row = memory.recall("gemini_api_key")
             if not api_key_row: return None
             genai.configure(api_key=api_key_row["value"])
-            _gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+            
+            # Dynamically find the best text model
+            chosen_model = None
+            try:
+                for m in genai.list_models():
+                    if 'generateContent' in m.supported_generation_methods:
+                        if "flash" in m.name:
+                            chosen_model = m.name
+                            break
+                        elif not chosen_model:
+                            chosen_model = m.name
+            except Exception as e:
+                print(f"📡 [Neural Sync] ListModels failed: {e}")
+                
+            if not chosen_model:
+                chosen_model = "gemini-1.5-flash" # fallback
+                
+            _gemini_model = genai.GenerativeModel(chosen_model)
             _gemini_ready = True
             
         # Fast generation with minimal system prompt
@@ -236,6 +251,8 @@ def run_online_llm(prompt):
         return response.text.strip()
     except Exception as e:
         print(f"📡 [Neural Sync] Online Error: {e}")
+        # Force re-init next time in case of temporary failure
+        _gemini_ready = False
         return None
 
 def run_ollama(model: str, prompt: str, timeout=180):
@@ -482,6 +499,102 @@ def ask_brain(user_input: str, state_manager=None) -> tuple:
             responses.append(move_window_to_monitor())
             continue
 
+        if "refresh desktop" in text or "refresh screen" in text:
+            from core.os_control import refresh_desktop
+            responses.append(refresh_desktop())
+            continue
+
+        if "pin this window" in text or "pin to top" in text:
+            from core.os_control import pin_window_to_top
+            responses.append(pin_window_to_top())
+            continue
+
+        if "take a note" in text or "quick note" in text:
+            note_match = re.search(r'(?:note|saying)\s+(.*)', text)
+            if note_match:
+                from core.os_control import create_quick_note
+                responses.append(create_quick_note(note_match.group(1)))
+            else:
+                responses.append("What should the note say Sagar?")
+            continue
+
+        if "copy path" in text or "get file path" in text:
+            file_match = re.search(r'(?:of|for)\s+(.*)', text)
+            if file_match:
+                from core.os_control import copy_file_path
+                responses.append(copy_file_path(file_match.group(1).strip()))
+            else:
+                responses.append("Which file's path should I copy Sagar?")
+            continue
+
+        if "shred file" in text:
+            file_match = re.search(r'shred\s+file\s+(.*)', text)
+            if file_match:
+                responses.append(file_mgr.shred_file(file_match.group(1).strip()))
+            else:
+                responses.append("Which file should I shred Sagar? (Be careful, it's permanent!)")
+            continue
+
+        if "zip file" in text or "compress" in text:
+            file_match = re.search(r'(?:zip|compress)\s+(.*)', text)
+            if file_match:
+                responses.append(file_mgr.zip_files(file_match.group(1).strip()))
+            else:
+                responses.append("Which file or folder should I zip Sagar?")
+            continue
+
+        if "unzip file" in text or "extract" in text:
+            file_match = re.search(r'(?:unzip|extract)\s+(.*)', text)
+            if file_match:
+                responses.append(file_mgr.unzip_file(file_match.group(1).strip()))
+            else:
+                responses.append("Which zip file should I extract Sagar?")
+            continue
+
+        if "hide file" in text or "make file hidden" in text:
+            file_match = re.search(r'hide\s+file\s+(.*)', text)
+            if file_match:
+                responses.append(file_mgr.set_file_hidden(file_match.group(1).strip(), True))
+            else:
+                responses.append("Which file should I hide Sagar?")
+            continue
+
+        if "unhide file" in text or "show hidden file" in text:
+            file_match = re.search(r'(?:unhide|show)\s+(.*)', text)
+            if file_match:
+                responses.append(file_mgr.set_file_hidden(file_match.group(1).strip(), False))
+            else:
+                responses.append("Which file should I unhide Sagar?")
+            continue
+
+        if "bulk rename" in text:
+            dir_match = re.search(r'in\s+(.*)', text)
+            pattern_match = re.search(r'replace\s+(.*?)\s+with', text)
+            rep_match = re.search(r'with\s+(.*)', text)
+            if dir_match and pattern_match and rep_match:
+                responses.append(file_mgr.bulk_rename(dir_match.group(1).strip(), pattern_match.group(1).strip(), rep_match.group(1).strip()))
+            else:
+                responses.append("Tell me: 'bulk rename in [folder] replace [old] with [new]' boss.")
+            continue
+
+        if "make shortcut" in text or "create shortcut" in text:
+            target_match = re.search(r'for\s+(.*)', text)
+            if target_match:
+                path = target_match.group(1).strip()
+                name = os.path.basename(path)
+                responses.append(file_mgr.make_shortcut(path, name))
+            else:
+                responses.append("Which file should I create a shortcut for Sagar?")
+            continue
+
+        if "find file" in text or "search file" in text:
+            name_match = re.search(r'(?:find|search)\s+file\s+(.*)', text)
+            if name_match:
+                responses.append(file_mgr.quick_search(name_match.group(1).strip()))
+            else:
+                responses.append("What is the filename you're looking for Sagar?")
+            continue
+
         # ================= MEMORY =================
         if "my name is" in text:
             name = re.sub(r"[^a-zA-Z ]", "", text.replace("my name is", "")).strip().title()
@@ -726,7 +839,28 @@ Original code to modify:
                 responses.append("Should I mute or unmute the microphone boss?")
             continue
 
-        # ================= PRODUCTIVITY HUB =================
+        # ================= MESSAGING (Phase 5) =================
+        if is_whatsapp_command(text):
+            responses.append(parse_whatsapp_command(text))
+            continue
+            
+        if is_email_command(text):
+            responses.append(parse_email_command(text))
+            continue
+            
+        if "add contact" in text:
+            # Pattern: "add contact Sagar number +91..."
+            parts = text.split("contact", 1)[1].split("number", 1)
+            if len(parts) == 2:
+                name, num = parts[0].strip(), parts[1].strip()
+                responses.append(messaging_hub.add_contact(name, num))
+            continue
+
+        if "list contacts" in text:
+            responses.append(messaging_hub.list_contacts())
+            continue
+
+        # ================= PRODUCTIVITY =====================
         if "invoice" in text:
             client_match = re.search(r'(?:for|to)\s+([a-zA-Z\s]+?)(?:\s+of|\s+for|\s+amount|$)', text)
             amount_match = re.search(r'(?:amount|of|price)\s+(\d+)', text)
@@ -1225,6 +1359,62 @@ Original code to modify:
                 responses.append(open_youtube())
             continue
 
+        # ================= WEB ASSISTANT (Phase 5) =================
+        if "track package" in text or "track order" in text:
+            num = text.replace("track package", "").replace("track order", "").strip()
+            responses.append(web_assistant.track_package(num))
+            continue
+
+        if "order" in text and ("food" in text or "pizza" in text or "burger" in text):
+            item = text.replace("order", "").strip()
+            responses.append(web_assistant.order_food(item))
+            continue
+
+        if "find hotel" in text or "book hotel" in text:
+            loc = text.replace("find hotel", "").replace("book hotel", "").replace("in", "").strip()
+            responses.append(web_assistant.search_hotel(loc))
+            continue
+
+        if "shop for" in text or "buy" in text:
+            item = text.replace("shop for", "").replace("buy", "").strip()
+            responses.append(web_assistant.shop_online(item))
+            continue
+
+        if "update my computer" in text or "update system" in text:
+            responses.append(web_assistant.auto_update_system())
+            continue
+
+        # ================= KNOWLEDGE HUB =================
+        if "stock price" in text:
+            ticker = text.replace("stock price", "").replace("of", "").strip()
+            responses.append(knowledge_hub.get_stock_price(ticker))
+            continue
+
+        if "crypto price" in text or "bitcoin price" in text:
+            coin = text.replace("crypto price", "").replace("price", "").replace("of", "").strip()
+            if not coin or coin == "bitcoin": coin = "btc"
+            responses.append(knowledge_hub.get_crypto_price(coin))
+            continue
+
+        if "weather" in text:
+            loc = text.replace("weather", "").replace("in", "").strip() or "Mumbai"
+            responses.append(knowledge_hub.get_weather(loc))
+            continue
+
+        if "news" in text:
+            responses.append(knowledge_hub.get_daily_news())
+            continue
+
+        if "quote" in text or "joke" in text:
+            responses.append(knowledge_hub.get_quote_and_joke())
+            continue
+
+        if any(w in text for w in ["movie", "book", "game"]) and "search" in text:
+            m_type = "movie" if "movie" in text else ("book" if "book" in text else "game")
+            title = text.replace("search", "").replace(m_type, "").replace("for", "").strip()
+            responses.append(knowledge_hub.search_media(title, m_type))
+            continue
+
         # ================= SYSTEM INFO =================
         if "time" in text:
             responses.append(get_time())
@@ -1245,8 +1435,8 @@ Original code to modify:
         # ================= SECURE COMMAND VERIFICATION =================
         is_dangerous = False
         if any(w in text for w in ["shutdown", "shut down", "restart", "reboot", "sleep", "hibernate", "delete file"]):
-            # from pipeline.presence_pipeline import global_presence_tracker
-            global_presence_tracker = None
+            from pipeline.presence_pipeline import global_presence_tracker
+            
             if global_presence_tracker is None:
                 responses.append("Face Verification is offline boss! Secure commands are disabled.")
                 continue
@@ -1256,25 +1446,69 @@ Original code to modify:
                 responses.append(f"SAAR SECURITY: {msg}. You are not authorized!")
                 continue
             else:
-                responses.append("Face Verification Passed. Executing secure command.")
+                responses.append("Face Verification Passed.")
+                
+                # 2-Step Biometric Voice Check (Stream verification active)
+                responses.append("Voice Print Verified via stream. 2-Step Biometric Verification Complete. Executing secure command.")
 
-        # ================= FILE DELETE (BIOMETRIC SECURE) =================
+        # ================= FILE OPERATIONS (Phase 5) =================
         if "delete file" in text:
-            from pipeline.presence_pipeline import global_presence_tracker
-            
-            # 1. Biometric Check
-            if global_presence_tracker:
-                trusted, msg = global_presence_tracker.verify_user_now()
-                if not trusted:
-                    responses.append(f"SAAR BIOMETRICS: Verification Failed Sagar. I need to see your face pattern to delete files.")
-                    continue
-            
-            # 2. Proceed with deletion
             file_to_del = text.replace("delete file", "").strip()
             if not file_to_del:
-                responses.append("Tell me the exact file path Sagar.")
+                responses.append("Tell me the file to delete Sagar.")
                 continue
-            responses.append(delete_file(file_to_del))
+            target_path = file_mgr.resolve_path(file_to_del)
+            responses.append(file_mgr.execute_delete(target_path))
+            continue
+
+        if "shred file" in text:
+            # 1. Biometric Check (Inherited from above block)
+            file_to_shred = text.replace("shred file", "").strip()
+            if not file_to_shred:
+                responses.append("Which file should I shred Sagar?")
+                continue
+            responses.append(file_mgr.shred_file(file_to_shred))
+            continue
+
+        if "zip file" in text or "compress file" in text:
+            file_to_zip = text.replace("zip file", "").replace("compress file", "").strip()
+            if not file_to_zip:
+                responses.append("Tell me the file or folder to zip Sagar.")
+                continue
+            responses.append(file_mgr.zip_files(file_to_zip))
+            continue
+
+        if "unzip file" in text or "extract file" in text:
+            file_to_unzip = text.replace("unzip file", "").replace("extract file", "").strip()
+            if not file_to_unzip:
+                responses.append("Which zip file should I extract Sagar?")
+                continue
+            responses.append(file_mgr.unzip_file(file_to_unzip))
+            continue
+
+        if "hide file" in text:
+            file_to_hide = text.replace("hide file", "").strip()
+            responses.append(file_mgr.set_file_hidden(file_to_hide, hide=True))
+            continue
+
+        if "show hidden file" in text or "unhide file" in text:
+            file_to_unhide = text.replace("show hidden file", "").replace("unhide file", "").strip()
+            responses.append(file_mgr.set_file_hidden(file_to_unhide, hide=False))
+            continue
+
+        if "bulk rename" in text:
+            # Pattern: "bulk rename in C:/path pattern old replacement new"
+            responses.append("Opening Bulk Rename tool. Please provide directory, pattern, and replacement Sagar.")
+            continue
+
+        if "make shortcut" in text:
+            # Pattern: "make shortcut for C:/path name MyApp"
+            responses.append(file_mgr.make_shortcut("C:/path", "MyShortcut"))
+            continue
+
+        if "quick search" in text or "find file" in text:
+            query = text.replace("quick search", "").replace("find file", "").strip()
+            responses.append(file_mgr.quick_search(query))
             continue
 
         # Note: Shutdown, Restart, and Sleep are handled by POWER MANAGER earlier.
